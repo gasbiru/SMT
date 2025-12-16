@@ -44,7 +44,8 @@ def prepare_data(sample, reduce_ratio=1.0, fixed_size=None):
 
 def load_set(dataset, split="train", reduce_ratio=1.0, fixed_size=None):
     ds = datasets.load_dataset(dataset, split=split, trust_remote_code=False)
-    ds = ds.map(prepare_data, fn_kwargs={"reduce_ratio": reduce_ratio, "fixed_size": fixed_size}, num_proc=4, writer_batch_size=500)
+    # Reduzido para evitar overhead em ambientes limitados (Kaggle)
+    ds = ds.map(prepare_data, fn_kwargs={"reduce_ratio": reduce_ratio, "fixed_size": fixed_size}, num_proc=1, writer_batch_size=100, load_from_cache_file=True)
 
     return ds
 
@@ -70,9 +71,10 @@ def load_from_files_list(
         split: str = "train",
         krn_format: str = 'bekern',
         reduce_ratio: float = 0.5,
-        map_kwargs: dict[str, any] = {"num_proc": 8}
+        map_kwargs: dict[str, any] = {"num_proc": 1, "writer_batch_size": 100, "load_from_cache_file": True}
         ):
     dataset = datasets.load_dataset(file_ref, split=split, trust_remote_code=False)
+    # Não limpar cache para reutilizar processamento
     # dataset.cleanup_cache_files()
     dataset = dataset.map(
             prepare_fp_data,
@@ -260,7 +262,7 @@ class GrandStaffFullPage(GrandStaffSingleSystem):
         self.reduce_ratio: float = reduce_ratio
         self.krn_format: str = krn_format
 
-        self.data = load_from_files_list(data_path, split, krn_format, reduce_ratio=reduce_ratio, map_kwargs={"writer_batch_size": 32})
+        self.data = load_from_files_list(data_path, split, krn_format, reduce_ratio=reduce_ratio, map_kwargs={"writer_batch_size": 100, "num_proc": 1, "load_from_cache_file": True})
 
 class SyntheticOMRDataset(OMRIMG2SEQDataset):
     """Synthetic dataset using VerovioGenerator"""

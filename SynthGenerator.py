@@ -53,11 +53,13 @@ def prepare_data(sample, krn_format: str = "standard"):
 
 def load_from_files_list(dataset_ref: list, split:str="train") -> list:
     ds = load_dataset(dataset_ref, split=split)
+    # Não limpar cache para reutilizar processamento
     # ds.cleanup_cache_files()
     ds = ds.map(
         prepare_data,
         fn_kwargs={"krn_format": "standard"},
-        num_proc=8)
+        num_proc=1,  # Reduzido para evitar overhead
+        load_from_cache_file=True)
 
     return ds["transcription"] # [parse_kern(content) for content in progress.track(ds["transcription"])]
 

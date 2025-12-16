@@ -1,0 +1,15 @@
+{
+	"data": {
+		"data_path": "antoniorv6/grandstaff-ekern",
+		"batch_size": 2,
+		"vocab_name": "FP_GrandStaff_BeKern",
+		"num_workers": 4,
+		"krn_format": "bekern",
+		"reduce_ratio": 0.5
+	},
+	"checkpoint": {
+		"filename": "FP-Grandstaff-system-level-kaggle",
+		"monitor": "val_SER",
+		"dirpath": "/kaggle/working/checkpoints/"
+	}
+}
