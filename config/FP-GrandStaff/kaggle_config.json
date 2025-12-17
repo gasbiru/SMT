@@ -1,11 +1,12 @@
 {
 	"data": {
-		"data_path": "antoniorv6/full-page-grandstaff",
+		"data_path": "PRAIG/grandstaff",
 		"batch_size": 2,
 		"vocab_name": "FP_GrandStaff_BeKern",
 		"num_workers": 4,
 		"krn_format": "bekern",
-		"reduce_ratio": 0.5
+		"reduce_ratio": 0.5,
+		"dataset_fraction": 0.25
 	},
 	"checkpoint": {
 		"filename": "FP-Grandstaff-kaggle",

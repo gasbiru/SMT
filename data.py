@@ -92,9 +92,16 @@ def load_from_files_list(
         split: str = "train",
         krn_format: str = 'bekern',
         reduce_ratio: float = 0.5,
+        dataset_fraction: float = 1.0,  # 1.0 = 100%, 0.25 = 25%
         map_kwargs: dict[str, any] = {"num_proc": None, "writer_batch_size": 100, "load_from_cache_file": True}
         ):
     dataset = datasets.load_dataset(file_ref, split=split, trust_remote_code=False)
+    
+    # Reduzir tamanho do dataset se solicitado (para testes mais rápidos)
+    if dataset_fraction < 1.0:
+        original_size = len(dataset)
+        dataset = dataset.select(range(int(len(dataset) * dataset_fraction)))
+        print(f"📊 Dataset reduzido: {original_size} → {len(dataset)} samples ({dataset_fraction*100:.0f}%)")
     # Não limpar cache para reutilizar processamento
     # dataset.cleanup_cache_files()
     
@@ -272,7 +279,12 @@ class GrandStaffSingleSystem(OMRIMG2SEQDataset):
         else:
             x = convert_img_to_tensor(x)
 
-        y = torch.from_numpy(np.asarray([self.w2i[token] for token in y]))
+        # Filtrar tokens desconhecidos (ignorar tokens que não estão no vocabulário)
+        valid_tokens = [self.w2i[token] for token in y if token in self.w2i]
+        # Se não sobrou nenhum token válido, usar pelo menos <pad>
+        if len(valid_tokens) == 0:
+            valid_tokens = [self.w2i.get('<pad>', 0)]
+        y = torch.from_numpy(np.asarray(valid_tokens))
         decoder_input = self.apply_teacher_forcing(y)
 
         return x, decoder_input, y
@@ -294,6 +306,7 @@ class GrandStaffFullPage(GrandStaffSingleSystem):
             reduce_ratio: float = 1.0,
             augment: bool = False,
             krn_format: str = "bekern",
+            dataset_fraction: float = 1.0,  # Fração do dataset a usar (0.25 = 25%)
             *args, **kwargs
             ):
         OMRIMG2SEQDataset.__init__(
@@ -305,7 +318,7 @@ class GrandStaffFullPage(GrandStaffSingleSystem):
         self.reduce_ratio: float = reduce_ratio
         self.krn_format: str = krn_format
 
-        self.data = load_from_files_list(data_path, split, krn_format, reduce_ratio=reduce_ratio, map_kwargs={"writer_batch_size": 100, "num_proc": None, "load_from_cache_file": True})
+        self.data = load_from_files_list(data_path, split, krn_format, reduce_ratio=reduce_ratio, dataset_fraction=dataset_fraction, map_kwargs={"writer_batch_size": 100, "num_proc": None, "load_from_cache_file": True})
 
 class SyntheticOMRDataset(OMRIMG2SEQDataset):
     """Synthetic dataset using VerovioGenerator"""
@@ -341,7 +354,11 @@ class SyntheticOMRDataset(OMRIMG2SEQDataset):
         else:
             x = convert_img_to_tensor(x)
 
-        y = torch.from_numpy(np.asarray([self.w2i[token] for token in y]))
+        # Filtrar tokens desconhecidos (ignorar tokens que não estão no vocabulário)
+        valid_tokens = [self.w2i[token] for token in y if token in self.w2i]
+        if len(valid_tokens) == 0:
+            valid_tokens = [self.w2i.get('<pad>', 0)]
+        y = torch.from_numpy(np.asarray(valid_tokens))
         decoder_input = self.apply_teacher_forcing(y)
 
         return x, decoder_input, y
@@ -439,7 +456,11 @@ class CurriculumTrainingDataset(GrandStaffFullPage):
         else:
            x = convert_img_to_tensor(x)
 
-        y = torch.from_numpy(np.asarray([self.w2i[token] for token in y if token != '']))
+        # Filtrar tokens vazios E tokens desconhecidos
+        valid_tokens = [self.w2i[token] for token in y if token != '' and token in self.w2i]
+        if len(valid_tokens) == 0:
+            valid_tokens = [self.w2i.get('<pad>', 0)]
+        y = torch.from_numpy(np.asarray(valid_tokens))
         decoder_input = self.apply_teacher_forcing(y)
 
         # wandb.log({'Stage': stage})
@@ -569,9 +590,10 @@ class SyntheticCLGrandStaffDataset(LightningDataModule):
         self.num_workers = config.num_workers
         self.krn_format = config.krn_format
 
-        self.train_set = GrandStaffFullPage(data_path=self.data_path, split="train", augment=True, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio)
-        self.val_set = GrandStaffFullPage(data_path=self.data_path, split="val", augment=False, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio)
-        self.test_set = GrandStaffFullPage(data_path=self.data_path, split="test", augment=False, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio)
+        # Usar dataset_fraction para reduzir tamanho (padrão: 0.25 = 25% para testes rápidos)
+        self.train_set = GrandStaffFullPage(data_path=self.data_path, split="train", augment=True, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio, dataset_fraction=config.dataset_fraction)
+        self.val_set = GrandStaffFullPage(data_path=self.data_path, split="val", augment=False, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio, dataset_fraction=config.dataset_fraction)
+        self.test_set = GrandStaffFullPage(data_path=self.data_path, split="test", augment=False, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio, dataset_fraction=config.dataset_fraction)
         w2i, i2w = check_and_retrieveVocabulary([self.train_set.get_gt(), self.val_set.get_gt(), self.test_set.get_gt()], "vocab/", f"{self.vocab_name}")#
 
         self.train_set.set_dictionaries(w2i, i2w)

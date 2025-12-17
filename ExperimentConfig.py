@@ -41,6 +41,7 @@ class Data:
     num_workers: int
     reduce_ratio: float
     krn_format: str
+    dataset_fraction: float = 1.0  # Fração do dataset (1.0 = 100%, 0.25 = 25%)
 
     @staticmethod
     def from_dict(obj: Any) -> 'Data':
@@ -53,8 +54,9 @@ class Data:
         num_workers = from_int(obj.get("num_workers")) if "num_workers" in obj else 0
         reduce_ratio = from_float(obj.get("reduce_ratio")) if "reduce_ratio" in obj else 1.0
         krn_format = from_str(obj.get("krn_format")) if "krn_format" in obj else "kern"
+        dataset_fraction = from_float(obj.get("dataset_fraction")) if "dataset_fraction" in obj else 1.0
 
-        return Data(data_path, batch_size, vocab_name, img_format, num_workers, reduce_ratio, krn_format)
+        return Data(data_path, batch_size, vocab_name, img_format, num_workers, reduce_ratio, krn_format, dataset_fraction)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -66,6 +68,7 @@ class Data:
         result["num_workers"] = from_int(self.num_workers)
         result["reduce_ratio"] = to_float(self.reduce_ratio)
         result["krn_format"] = from_str(self.krn_format)
+        result["dataset_fraction"] = to_float(self.dataset_fraction)
 
         return result
 
