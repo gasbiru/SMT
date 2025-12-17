@@ -77,7 +77,13 @@ class VerovioGenerator():
 
         self.krn_format = krn_format
         self.title_generator = RandomSentence()
-        self.textures = [os.path.join("Generator/paper_textures", f) for f in os.listdir("Generator/paper_textures") if os.path.isfile(os.path.join("Generator/paper_textures", f))]
+        
+        # Carregar texturas se a pasta existir, senão usar lista vazia
+        textures_dir = "Generator/paper_textures"
+        if os.path.exists(textures_dir) and os.path.isdir(textures_dir):
+            self.textures = [os.path.join(textures_dir, f) for f in os.listdir(textures_dir) if os.path.isfile(os.path.join(textures_dir, f))]
+        else:
+            self.textures = []  # Sem texturas, geração sintética usará fundo branco
 
 
     def load_beats(self, sources: list, split:str):
@@ -232,7 +238,14 @@ class VerovioGenerator():
 
         x = self.convert_to_png(image, cut=strict_height)
 
-        texture = Image.open(random.choice(self.textures))
+        # Se houver texturas, aplicar uma; caso contrário, criar fundo branco
+        if self.textures:
+            texture = Image.open(random.choice(self.textures))
+        else:
+            # Criar textura branca do tamanho da imagem
+            img_width, img_height = x.shape[1], x.shape[0]
+            texture = Image.new('RGB', (img_width, img_height), (255, 255, 255))
+        
         img_width, img_height = x.shape[1], x.shape[0]
         #Check if the texture is smaller than the image. If so, resize it to the image size
         if texture.size[0] < img_width or texture.size[1] < img_height:
