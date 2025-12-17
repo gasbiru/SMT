@@ -44,8 +44,8 @@ def prepare_data(sample, reduce_ratio=1.0, fixed_size=None):
 
 def load_set(dataset, split="train", reduce_ratio=1.0, fixed_size=None):
     ds = datasets.load_dataset(dataset, split=split, trust_remote_code=False)
-    # Reduzido para evitar overhead em ambientes limitados (Kaggle)
-    ds = ds.map(prepare_data, fn_kwargs={"reduce_ratio": reduce_ratio, "fixed_size": fixed_size}, num_proc=1, writer_batch_size=100, load_from_cache_file=True)
+    # num_proc=None: Desabilita multiprocessing para evitar overhead de serialização
+    ds = ds.map(prepare_data, fn_kwargs={"reduce_ratio": reduce_ratio, "fixed_size": fixed_size}, num_proc=None, writer_batch_size=100, load_from_cache_file=True)
 
     return ds
 
@@ -283,7 +283,7 @@ class GrandStaffFullPage(GrandStaffSingleSystem):
         self.reduce_ratio: float = reduce_ratio
         self.krn_format: str = krn_format
 
-        self.data = load_from_files_list(data_path, split, krn_format, reduce_ratio=reduce_ratio, map_kwargs={"writer_batch_size": 100, "num_proc": 1, "load_from_cache_file": True})
+        self.data = load_from_files_list(data_path, split, krn_format, reduce_ratio=reduce_ratio, map_kwargs={"writer_batch_size": 100, "num_proc": None, "load_from_cache_file": True})
 
 class SyntheticOMRDataset(OMRIMG2SEQDataset):
     """Synthetic dataset using VerovioGenerator"""
