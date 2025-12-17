@@ -60,19 +60,29 @@ def prepare_fp_data(
     # Garantir que a imagem seja convertida para numpy array
     img = sample['image']
     
-    # Converter PIL Image para numpy array
-    if hasattr(img, 'convert'):
-        # É uma PIL Image
-        img = np.array(img.convert("RGB"))
-    elif not isinstance(img, np.ndarray):
-        # Tentar converter para numpy array
-        img = np.array(img)
-    
-    # Verificar se é array válido e redimensionar
-    if isinstance(img, np.ndarray) and img.size > 0:
-        width = int(np.ceil(img.shape[1] * reduce_ratio))
-        height = int(np.ceil(img.shape[0] * reduce_ratio))
-        img = cv2.resize(img, (width, height))
+    # Forçar conversão para numpy array
+    try:
+        # Se for PIL Image, converter para RGB primeiro
+        if hasattr(img, 'mode'):
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            img = np.array(img)
+        elif not isinstance(img, np.ndarray):
+            img = np.array(img)
+        
+        # Garantir que é numpy array antes de redimensionar
+        if not isinstance(img, np.ndarray):
+            raise ValueError(f"Imagem não pôde ser convertida para numpy array. Tipo: {type(img)}")
+        
+        # Redimensionar
+        if img.size > 0 and len(img.shape) >= 2:
+            width = int(np.ceil(img.shape[1] * reduce_ratio))
+            height = int(np.ceil(img.shape[0] * reduce_ratio))
+            img = cv2.resize(img, (width, height))
+        
+    except Exception as e:
+        print(f"Erro ao processar imagem: {e}, tipo original: {type(sample['image'])}")
+        raise
     
     sample["image"] = img
 
