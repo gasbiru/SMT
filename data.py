@@ -59,6 +59,7 @@ def prepare_fp_data(
 
     # Garantir que a imagem seja convertida para numpy array
     img = sample['image']
+    original_type = type(img)
     
     # Forçar conversão para numpy array
     try:
@@ -66,22 +67,35 @@ def prepare_fp_data(
         if hasattr(img, 'mode'):
             if img.mode != 'RGB':
                 img = img.convert('RGB')
-            img = np.array(img)
+            # Forçar conversão explícita para numpy
+            img = np.asarray(img, dtype=np.uint8)
         elif not isinstance(img, np.ndarray):
-            img = np.array(img)
+            img = np.asarray(img, dtype=np.uint8)
         
-        # Garantir que é numpy array antes de redimensionar
+        # Debug: verificar tipo após conversão
         if not isinstance(img, np.ndarray):
-            raise ValueError(f"Imagem não pôde ser convertida para numpy array. Tipo: {type(img)}")
+            raise ValueError(f"Falha na conversão! Tipo original: {original_type}, Tipo após conversão: {type(img)}")
+        
+        # Debug: verificar propriedades do array
+        if img.ndim < 2:
+            raise ValueError(f"Array com dimensões incorretas: {img.ndim}")
         
         # Redimensionar
-        if img.size > 0 and len(img.shape) >= 2:
+        if img.size > 0:
             width = int(np.ceil(img.shape[1] * reduce_ratio))
             height = int(np.ceil(img.shape[0] * reduce_ratio))
+            # Garantir que img é contíguo em memória
+            img = np.ascontiguousarray(img)
             img = cv2.resize(img, (width, height))
         
     except Exception as e:
-        print(f"Erro ao processar imagem: {e}, tipo original: {type(sample['image'])}")
+        print(f"❌ Erro ao processar imagem:")
+        print(f"   Tipo original: {original_type}")
+        print(f"   Tipo após tentativa de conversão: {type(img)}")
+        print(f"   É numpy array: {isinstance(img, np.ndarray)}")
+        if isinstance(img, np.ndarray):
+            print(f"   Shape: {img.shape}, dtype: {img.dtype}")
+        print(f"   Erro: {e}")
         raise
     
     sample["image"] = img
