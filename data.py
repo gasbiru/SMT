@@ -59,11 +59,17 @@ def prepare_fp_data(
 
     # Garantir que a imagem seja convertida para numpy array
     img = sample['image']
-    if not isinstance(img, np.ndarray):
-        img = np.array(img.convert("RGB") if hasattr(img, 'convert') else img)
     
-    # Verificar se é array válido antes de redimensionar
-    if img is not None and img.size > 0:
+    # Converter PIL Image para numpy array
+    if hasattr(img, 'convert'):
+        # É uma PIL Image
+        img = np.array(img.convert("RGB"))
+    elif not isinstance(img, np.ndarray):
+        # Tentar converter para numpy array
+        img = np.array(img)
+    
+    # Verificar se é array válido e redimensionar
+    if isinstance(img, np.ndarray) and img.size > 0:
         width = int(np.ceil(img.shape[1] * reduce_ratio))
         height = int(np.ceil(img.shape[0] * reduce_ratio))
         img = cv2.resize(img, (width, height))
