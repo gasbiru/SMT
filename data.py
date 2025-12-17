@@ -97,13 +97,11 @@ def load_from_files_list(
         ):
     dataset = datasets.load_dataset(file_ref, split=split, trust_remote_code=False)
     
-    # Reduzir tamanho do dataset se solicitado (para testes mais rápidos)
+    # IMPORTANTE: Reduzir tamanho ANTES de qualquer operação!
     if dataset_fraction < 1.0:
         original_size = len(dataset)
         dataset = dataset.select(range(int(len(dataset) * dataset_fraction)))
         print(f"📊 Dataset reduzido: {original_size} → {len(dataset)} samples ({dataset_fraction*100:.0f}%)")
-    # Não limpar cache para reutilizar processamento
-    # dataset.cleanup_cache_files()
     
     # OTIMIZAÇÃO: Verificar se já está processado (tem as colunas corretas e formato esperado)
     # Se a coluna image já é numpy array e transcription tem tokens, skip Map
@@ -116,6 +114,7 @@ def load_from_files_list(
     except:
         pass  # Se falhar verificação, processar normalmente
     
+    print(f"🔄 Processando {len(dataset)} samples...")
     dataset = dataset.map(
             prepare_fp_data,
             fn_kwargs={
