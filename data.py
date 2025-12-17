@@ -59,44 +59,29 @@ def prepare_fp_data(
 
     # Garantir que a imagem seja convertida para numpy array
     img = sample['image']
-    original_type = type(img)
     
     # Forçar conversão para numpy array
-    try:
-        # Se for PIL Image, converter para RGB primeiro
-        if hasattr(img, 'mode'):
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
-            # Forçar conversão explícita para numpy
-            img = np.asarray(img, dtype=np.uint8)
-        elif not isinstance(img, np.ndarray):
-            img = np.asarray(img, dtype=np.uint8)
-        
-        # Debug: verificar tipo após conversão
-        if not isinstance(img, np.ndarray):
-            raise ValueError(f"Falha na conversão! Tipo original: {original_type}, Tipo após conversão: {type(img)}")
-        
-        # Debug: verificar propriedades do array
-        if img.ndim < 2:
-            raise ValueError(f"Array com dimensões incorretas: {img.ndim}")
-        
-        # Redimensionar
-        if img.size > 0:
-            width = int(np.ceil(img.shape[1] * reduce_ratio))
-            height = int(np.ceil(img.shape[0] * reduce_ratio))
-            # Garantir que img é contíguo em memória
-            img = np.ascontiguousarray(img)
-            img = cv2.resize(img, (width, height))
-        
-    except Exception as e:
-        print(f"❌ Erro ao processar imagem:")
-        print(f"   Tipo original: {original_type}")
-        print(f"   Tipo após tentativa de conversão: {type(img)}")
-        print(f"   É numpy array: {isinstance(img, np.ndarray)}")
-        if isinstance(img, np.ndarray):
-            print(f"   Shape: {img.shape}, dtype: {img.dtype}")
-        print(f"   Erro: {e}")
-        raise
+    # Se for PIL Image, converter para RGB primeiro
+    if hasattr(img, 'mode'):
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        # Converter para numpy e fazer cópia explícita para garantir que funciona com multiprocessing
+        img = np.array(img, dtype=np.uint8, copy=True)
+    elif not isinstance(img, np.ndarray):
+        img = np.array(img, dtype=np.uint8, copy=True)
+    else:
+        # Já é numpy, mas fazer cópia para garantir
+        img = np.array(img, dtype=np.uint8, copy=True)
+    
+    # Garantir que é C-contiguous (requisito do OpenCV)
+    if not img.flags['C_CONTIGUOUS']:
+        img = np.ascontiguousarray(img, dtype=np.uint8)
+    
+    # Redimensionar
+    if img.size > 0 and img.ndim >= 2:
+        width = int(np.ceil(img.shape[1] * reduce_ratio))
+        height = int(np.ceil(img.shape[0] * reduce_ratio))
+        img = cv2.resize(img, (width, height))
     
     sample["image"] = img
 
@@ -107,7 +92,7 @@ def load_from_files_list(
         split: str = "train",
         krn_format: str = 'bekern',
         reduce_ratio: float = 0.5,
-        map_kwargs: dict[str, any] = {"num_proc": 1, "writer_batch_size": 100, "load_from_cache_file": True}
+        map_kwargs: dict[str, any] = {"num_proc": None, "writer_batch_size": 100, "load_from_cache_file": True}
         ):
     dataset = datasets.load_dataset(file_ref, split=split, trust_remote_code=False)
     # Não limpar cache para reutilizar processamento
