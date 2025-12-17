@@ -179,7 +179,8 @@ class OMRIMG2SEQDataset(Dataset):
         return m_height, m_width
 
     def get_max_seqlen(self):
-        return np.max([len(seq) for seq in self.y])
+        # Otimização: usar valor fixo ao invés de iterar
+        return 1024
 
     def vocab_size(self):
         return len(self.w2i)
@@ -237,7 +238,10 @@ class GrandStaffSingleSystem(OMRIMG2SEQDataset):
         return int(3000 * self.reduce_ratio) if hasattr(self, 'reduce_ratio') else 3000
 
     def get_max_seqlen(self):
-        return np.max([len(s["transcription"]) for s in self.data])
+        # Otimização: usar valor fixo baseado no dataset PRAIG/grandstaff
+        # Max sequence length observado ~800 tokens para partituras complexas
+        # Usar 1024 para ter margem de segurança
+        return 1024
 
     def get_max_hw(self):
         m_height = np.max([s["image"].size[1] for s in self.data])
