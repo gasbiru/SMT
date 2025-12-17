@@ -591,6 +591,7 @@ class SyntheticCLGrandStaffDataset(LightningDataModule):
         self.krn_format = config.krn_format
 
         # Usar dataset_fraction para reduzir tamanho (padrão: 0.25 = 25% para testes rápidos)
+        print(f"🔧 Config dataset_fraction: {config.dataset_fraction}")
         self.train_set = GrandStaffFullPage(data_path=self.data_path, split="train", augment=True, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio, dataset_fraction=config.dataset_fraction)
         self.val_set = GrandStaffFullPage(data_path=self.data_path, split="val", augment=False, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio, dataset_fraction=config.dataset_fraction)
         self.test_set = GrandStaffFullPage(data_path=self.data_path, split="test", augment=False, krn_format=self.krn_format, reduce_ratio=config.reduce_ratio, dataset_fraction=config.dataset_fraction)

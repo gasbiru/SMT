@@ -36,6 +36,7 @@ def main(config_path, use_wandb=False, max_epochs=100):
     print(f"   - Batch size: {config.data.batch_size}")
     print(f"   - Num workers: {config.data.num_workers}")
     print(f"   - Reduce ratio: {config.data.reduce_ratio}")
+    print(f"   - Dataset fraction: {config.data.dataset_fraction} ({config.data.dataset_fraction*100:.0f}% dos dados)")
 
     datamodule = SyntheticCLGrandStaffDataset(config=config.data, skip_steps=0)
 
