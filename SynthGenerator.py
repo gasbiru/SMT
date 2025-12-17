@@ -58,7 +58,7 @@ def load_from_files_list(dataset_ref: list, split:str="train") -> list:
     ds = ds.map(
         prepare_data,
         fn_kwargs={"krn_format": "standard"},
-        num_proc=1,  # Reduzido para evitar overhead
+        num_proc=None,  # Desabilitar multiprocessing para evitar overhead de serialização
         load_from_cache_file=True)
 
     return ds["transcription"] # [parse_kern(content) for content in progress.track(ds["transcription"])]
