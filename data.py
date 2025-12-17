@@ -57,11 +57,17 @@ def prepare_fp_data(
         ):
     sample["transcription"] = ['<bos>'] + parse_kern(sample["transcription"], krn_format=krn_format)[4:] + ['<eos>'] # Remove **kern, **ekern and **bekern header
 
-    img = np.array(sample['image'].convert("RGB"))
-    width = int(np.ceil(img.shape[1] * reduce_ratio))
-    height = int(np.ceil(img.shape[0] * reduce_ratio))
-    img = cv2.resize(img, (width, height))
-
+    # Garantir que a imagem seja convertida para numpy array
+    img = sample['image']
+    if not isinstance(img, np.ndarray):
+        img = np.array(img.convert("RGB") if hasattr(img, 'convert') else img)
+    
+    # Verificar se é array válido antes de redimensionar
+    if img is not None and img.size > 0:
+        width = int(np.ceil(img.shape[1] * reduce_ratio))
+        height = int(np.ceil(img.shape[0] * reduce_ratio))
+        img = cv2.resize(img, (width, height))
+    
     sample["image"] = img
 
     return sample
